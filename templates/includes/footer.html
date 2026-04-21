@@ -1,0 +1,36 @@
+{% load static %}
+<footer class="bg-white border-top mt-auto py-4">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4 mb-3 mb-md-0">
+                <h5 class="text-dark mb-3"><i class="fas fa-rss text-primary me-2"></i>Сборник новостей</h5>
+                <p class="text-muted small">Собираем новости из лучших источников. Умная фильтрация, персонализированные подборки и удобный поиск.</p>
+            </div>
+            
+            <div class="col-md-2 mb-3 mb-md-0">
+                <h6 class="text-dark mb-3">Разделы</h6>
+                <ul class="list-unstyled">
+                    <li class="mb-2"><a href="{% url 'news:index' %}" class="text-muted text-decoration-none">Лента</a></li>
+                    <li class="mb-2"><a href="{% url 'news:saved_articles' %}" class="text-muted text-decoration-none">Сохранённое</a></li>
+                    {% if user.is_authenticated and user.is_staff %}
+                        <li class="mb-2"><a href="{% url 'news:sources' %}" class="text-muted text-decoration-none">Источники</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+            
+            
+            <div class="col-md-3">
+                <h6 class="text-dark mb-3">Мы в соцсетях</h6>
+                <div class="d-flex gap-3 justify-content-md-start justify-content-center">
+                    <a href="https://vk.com/yuullik" class="text-muted fs-5"><i class="fab fa-vk"></i></a>
+                    <a href="https://vk.com/yuullik" class="text-muted fs-5"><i class="fab fa-twitter"></i></a>
+                    <a href="https://vk.com/yuullik" class="text-muted fs-5"><i class="fab fa-youtube"></i></a>
+                </div>
+                <p class="text-muted small mt-3 text-center text-md-start">
+                    © {% now "Y" %} Сборник новостей. Все права защищены.
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+</footer>

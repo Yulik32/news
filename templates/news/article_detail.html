@@ -1,0 +1,408 @@
+<!-- Филатова Юля, ИСП-422р -->
+
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ article.title }} - Сборник новостей{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <!-- Статья -->
+        <article class="card border-0 shadow-sm">
+            {% if article.image %}
+                <img src="{{ article.image.url }}" class="img-fluid rounded" alt="{{ article.title }}">
+            {% elif article.image_url %}
+                <img src="{{ article.image_url }}" class="img-fluid rounded" alt="{{ article.title }}">
+            {% endif %}
+            
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <span class="badge bg-light text-dark me-2">
+                        <i class="fas fa-dot-circle text-primary me-1" style="font-size: 0.5rem;"></i>
+                        {{ article.source.name }}
+                    </span>
+                    <span class="text-muted small me-2">
+                        <i class="far fa-clock me-1"></i>{{ article.published_at|date:"d.m.Y H:i" }}
+                    </span>
+                    {% if article.category %}
+                        <span class="badge bg-light text-dark">
+                            <i class="fas fa-tag me-1"></i>{{ article.category.name }}
+                        </span>
+                    {% endif %}
+                </div>
+                
+                <h1 class="card-title mb-4">{{ article.title }}</h1>
+                
+                <div class="article-content mb-4">
+                    {{ article.content|linebreaks }}
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center border-top pt-3">
+                    <div class="text-muted">
+                        <i class="far fa-eye me-1"></i>{{ article.views }} просмотров
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        {% if user.is_authenticated %}  
+                            <a href="{% url 'news:save_article' article.pk %}" class="btn btn-outline-danger {% if saved %}active{% endif %}">
+                                <i class="{% if saved %}fas{% else %}far{% endif %} fa-bookmark me-1"></i>
+                                {% if saved %}Сохранено{% else %}Сохранить{% endif %}
+                            </a>
+                        {% endif %}
+                        
+                        <button class="btn btn-outline-primary share-btn" data-url="{% url 'news:article_detail' article.pk %}">
+                            <i class="far fa-share-square me-1"></i>Поделиться
+                        </button>
+                        
+                        <a href="{{ article.url }}" target="_blank" class="btn btn-primary">
+                            <i class="fas fa-external-link-alt me-1"></i>Читать оригинал
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </article>
+        
+        <!-- Похожие статьи -->
+        {% if similar_articles %}
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-white border-0">
+                    <h5 class="mb-0">Похожие статьи</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        {% for similar in similar_articles %}
+                            <div class="col-md-6">
+                                <div class="card h-100 border-0 bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title">
+                                            <a href="{% url 'news:article_detail' similar.pk %}" class="text-decoration-none text-dark">
+                                                {{ similar.title|truncatechars:60 }}
+                                            </a>
+                                        </h6>
+                                        <div class="d-flex align-items-center small text-muted">
+                                            <span>{{ similar.source.name }}</span>
+                                            <span class="mx-2">•</span>
+                                            <span>{{ similar.published_at|timesince }} назад</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Комментарии -->
+<div class="row mt-4">
+    <div class="col-lg-8 mx-auto">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-comments me-2 text-primary"></i>
+                    Комментарии (<span id="comments-count">{{ article.comments.count }}</span>)
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Форма добавления комментария -->
+                {% if user.is_authenticated %}
+                    <form id="comment-form" class="mb-4">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <textarea name="text" id="comment-text" class="form-control" rows="3" 
+                                      placeholder="Напишите ваш комментарий..." 
+                                      maxlength="1000" required></textarea>
+                            <div class="text-muted small mt-1" id="char-count">0 / 1000</div>
+                        </div>
+                        <button type="submit" class="btn btn-primary" id="submit-comment">
+                            <i class="fas fa-paper-plane me-2"></i>Отправить
+                        </button>
+                    </form>
+                    <hr>
+                {% else %}
+                    <div class="alert alert-info text-center">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <a href="{% url 'accounts:login' %}?next={{ request.path }}" class="alert-link">Войдите</a>, чтобы оставить комментарий
+                    </div>
+                {% endif %}
+                
+                <!-- Список комментариев -->
+                <div id="comments-list">
+                    {% for comment in article.comments.all %}
+                        {% include 'news/partials/comment_item.html' with comment=comment user=user %}
+                    {% empty %}
+                        <div class="text-center py-4 text-muted" id="no-comments">
+                            <i class="fas fa-comment-slash fa-2x mb-2"></i>
+                            <p>Пока нет комментариев. Будьте первым!</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Добавляем стили -->
+<style>
+    .article-content {
+        font-size: 1.1rem;
+        line-height: 1.8;
+        color: #2c3e50;
+    }
+    .article-content p {
+        margin-bottom: 1.5rem;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const commentsList = document.getElementById('comments-list');
+    const commentsCount = document.getElementById('comments-count');
+    const commentForm = document.getElementById('comment-form');
+    const commentTextarea = document.getElementById('comment-text');
+    const charCount = document.getElementById('char-count');
+    let csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    
+    // Получаем CSRF токен
+    if (!csrfToken) {
+        csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    }
+    const token = csrfToken ? csrfToken.value : '';
+    
+    // Подсчёт символов
+    if (commentTextarea && charCount) {
+        commentTextarea.addEventListener('input', function() {
+            const length = this.value.length;
+            charCount.textContent = `${length} / 1000`;
+            if (length > 1000) {
+                charCount.classList.add('text-danger');
+            } else {
+                charCount.classList.remove('text-danger');
+            }
+        });
+    }
+    
+    // Отправка комментария через AJAX
+    if (commentForm) {
+        commentForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const text = commentTextarea.value.trim();
+            if (!text || text.length < 3) {
+                alert('Комментарий слишком короткий (минимум 3 символа)');
+                return;
+            }
+            
+            const submitBtn = document.getElementById('submit-comment');
+            const originalBtnText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Отправка...';
+            
+            fetch(window.location.href + 'comment/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': token,
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: 'text=' + encodeURIComponent(text)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Удаляем сообщение "Нет комментариев"
+                    const noComments = document.getElementById('no-comments');
+                    if (noComments) noComments.remove();
+                    
+                    // Добавляем новый комментарий
+                    commentsList.insertAdjacentHTML('afterbegin', data.html);
+                    
+                    // Обновляем счётчик
+                    const currentCount = parseInt(commentsCount.textContent);
+                    commentsCount.textContent = currentCount + 1;
+                    
+                    // Очищаем форму
+                    commentTextarea.value = '';
+                    if (charCount) charCount.textContent = '0 / 1000';
+                    
+                    // Переподключаем события к новым кнопкам
+                    attachCommentEvents();
+                } else {
+                    let errorMsg = 'Ошибка: ';
+                    if (data.errors && data.errors.text) {
+                        errorMsg += data.errors.text.join(', ');
+                    } else {
+                        errorMsg += 'Не удалось отправить комментарий';
+                    }
+                    alert(errorMsg);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Произошла ошибка. Попробуйте позже.');
+            })
+            .finally(() => {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
+            });
+        });
+    }
+    
+    // Функция для привязки событий к комментариям
+    function attachCommentEvents() {
+        // Редактирование комментария
+        document.querySelectorAll('.edit-comment-btn').forEach(btn => {
+            btn.removeEventListener('click', handleEditClick);
+            btn.addEventListener('click', handleEditClick);
+        });
+        
+        // Удаление комментария
+        document.querySelectorAll('.delete-comment-btn').forEach(btn => {
+            btn.removeEventListener('click', handleDeleteClick);
+            btn.addEventListener('click', handleDeleteClick);
+        });
+        
+        // Сохранение редактирования
+        document.querySelectorAll('.save-edit-btn').forEach(btn => {
+            btn.removeEventListener('click', handleSaveEdit);
+            btn.addEventListener('click', handleSaveEdit);
+        });
+        
+        // Отмена редактирования
+        document.querySelectorAll('.cancel-edit-btn').forEach(btn => {
+            btn.removeEventListener('click', handleCancelEdit);
+            btn.addEventListener('click', handleCancelEdit);
+        });
+    }
+    
+    function handleEditClick(e) {
+        const btn = e.currentTarget;
+        const commentId = btn.dataset.id;
+        const commentDiv = document.getElementById(`comment-${commentId}`);
+        const textDiv = commentDiv.querySelector('.comment-text');
+        const editForm = commentDiv.querySelector('.edit-form-container');
+        const originalText = textDiv.innerText.trim();
+        
+        textDiv.style.display = 'none';
+        editForm.style.display = 'block';
+        const textarea = editForm.querySelector('.edit-textarea');
+        if (textarea) textarea.value = originalText;
+    }
+    
+    function handleSaveEdit(e) {
+        const btn = e.currentTarget;
+        const commentId = btn.dataset.id;
+        const commentDiv = document.getElementById(`comment-${commentId}`);
+        const editForm = commentDiv.querySelector('.edit-form-container');
+        const textarea = editForm.querySelector('.edit-textarea');
+        const newText = textarea.value.trim();
+        
+        if (!newText || newText.length < 3) {
+            alert('Комментарий слишком короткий (минимум 3 символа)');
+            return;
+        }
+        
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        
+        fetch(`/comment/${commentId}/edit/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': token,
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: 'text=' + encodeURIComponent(newText)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const textDiv = commentDiv.querySelector('.comment-text');
+                textDiv.innerHTML = data.new_text.replace(/\n/g, '<br>');
+                textDiv.style.display = 'block';
+                editForm.style.display = 'none';
+                
+                const metaDiv = commentDiv.querySelector('.d-flex.justify-content-between.align-items-start .d-flex');
+                if (data.is_edited && metaDiv && !metaDiv.querySelector('.badge.bg-secondary')) {
+                    const smallTag = metaDiv.querySelector('small');
+                    if (smallTag) {
+                        smallTag.innerHTML += ' <span class="badge bg-secondary ms-1" title="Отредактировано">✎ ред.</span>';
+                    }
+                }
+            } else {
+                alert(data.error || 'Ошибка при сохранении');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Произошла ошибка');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        });
+    }
+    
+    function handleCancelEdit(e) {
+        const btn = e.currentTarget;
+        const commentDiv = btn.closest('.comment-item');
+        if (!commentDiv) return;
+        const textDiv = commentDiv.querySelector('.comment-text');
+        const editForm = commentDiv.querySelector('.edit-form-container');
+        
+        textDiv.style.display = 'block';
+        editForm.style.display = 'none';
+    }
+    
+    function handleDeleteClick(e) {
+        const btn = e.currentTarget;
+        const commentId = btn.dataset.id;
+        
+        if (!confirm('Удалить комментарий?')) return;
+        
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        
+        fetch(`/comment/${commentId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': token,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const commentDiv = document.getElementById(`comment-${commentId}`);
+                if (commentDiv) commentDiv.remove();
+                
+                const currentCount = parseInt(commentsCount.textContent);
+                commentsCount.textContent = currentCount - 1;
+                
+                if (commentsList.children.length === 0) {
+                    commentsList.innerHTML = '<div class="text-center py-4 text-muted" id="no-comments"><i class="fas fa-comment-slash fa-2x mb-2"></i><p>Пока нет комментариев. Будьте первым!</p></div>';
+                }
+            } else {
+                alert(data.error || 'Ошибка при удалении');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Произошла ошибка');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        });
+    }
+    
+    // Инициализация событий для существующих комментариев
+    attachCommentEvents();
+});
+</script>
+{% endblock %}

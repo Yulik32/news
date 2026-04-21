@@ -1,0 +1,496 @@
+<!-- Филатова Юля, ИСП-422р -->
+
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Главная - Сборник новостей{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Фильтры -->
+    <div class="col-12 mb-4">
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-body p-4">
+                <!-- ДОБАВЛЯЕМ ТЕГ FORM -->
+                <form method="get" id="filter-form">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-12 col-md-5">
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0 rounded-start-3">
+                                    <i class="fas fa-search text-muted"></i>
+                                </span>
+                                <input type="text" 
+                                    class="form-control border-start-0 rounded-end-3" 
+                                    name="query" 
+                                    id="search-query"
+                                    placeholder="Поиск по заголовкам и тексту..." 
+                                    value="{{ request.GET.query }}">
+                            </div>
+                        </div>
+                        
+                        <div class="col-12 col-md-3">
+                            <select name="category" id="category-filter" class="form-select rounded-3">
+                                <option value="">Все категории</option>
+                                {% for category in categories %}
+                                    <option value="{{ category.id }}" {% if request.GET.category == category.id|stringformat:"i" %}selected{% endif %}>
+                                        {{ category.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-12 col-md-2">
+                            <select name="source" id="source-filter" class="form-select rounded-3">
+                                <option value="">Все источники</option>
+                                {% for source in sources %}
+                                    <option value="{{ source.id }}" {% if request.GET.source == source.id|stringformat:"i" %}selected{% endif %}>
+                                        {{ source.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-12 col-md-2">
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary flex-grow-1 rounded-3 py-2">
+                                    Применить
+                                </button>
+                                <button type="button" id="reset-filters" class="btn btn-outline-secondary rounded-3 py-2" title="Сбросить все фильтры">
+                                    <i class="fas fa-undo-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Быстрые фильтры по дате -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="d-flex flex-wrap gap-2">
+                                <a href="?{% if request.GET.query %}query={{ request.GET.query }}&{% endif %}{% if request.GET.category %}category={{ request.GET.category }}&{% endif %}{% if request.GET.source %}source={{ request.GET.source }}&{% endif %}date=today" 
+                                class="btn btn-outline-secondary rounded-pill px-4 {% if request.GET.date == 'today' %}active{% endif %}">
+                                    <i class="fas fa-calendar-day me-1"></i>Сегодня
+                                </a>
+                                <a href="?{% if request.GET.query %}query={{ request.GET.query }}&{% endif %}{% if request.GET.category %}category={{ request.GET.category }}&{% endif %}{% if request.GET.source %}source={{ request.GET.source }}&{% endif %}date=week" 
+                                class="btn btn-outline-secondary rounded-pill px-4 {% if request.GET.date == 'week' %}active{% endif %}">
+                                    <i class="fas fa-calendar-week me-1"></i>Неделя
+                                </a>
+                                <a href="?{% if request.GET.query %}query={{ request.GET.query }}&{% endif %}{% if request.GET.category %}category={{ request.GET.category }}&{% endif %}{% if request.GET.source %}source={{ request.GET.source }}&{% endif %}date=month" 
+                                class="btn btn-outline-secondary rounded-pill px-4 {% if request.GET.date == 'month' %}active{% endif %}">
+                                    <i class="fas fa-calendar-alt me-1"></i>Месяц
+                                </a>
+                                <a href="?{% if request.GET.query %}query={{ request.GET.query }}&{% endif %}{% if request.GET.category %}category={{ request.GET.category }}&{% endif %}{% if request.GET.source %}source={{ request.GET.source }}&{% endif %}date=all" 
+                                class="btn btn-outline-secondary rounded-pill px-4 {% if request.GET.date == 'all' %}active{% endif %}">
+                                    <i class="fas fa-infinity me-1"></i>За всё время
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Активные фильтры -->
+                    {% if request.GET.query or request.GET.category or request.GET.source or request.GET.date %}
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="d-flex flex-wrap gap-2 align-items-center">
+                                    <span class="text-muted small"><i class="fas fa-filter me-1"></i>Активные:</span>
+                                    {% if request.GET.query %}
+                                        <span class="badge bg-primary d-flex align-items-center gap-1 px-3 py-2 rounded-pill">
+                                            <i class="fas fa-search fa-xs me-1"></i>"{{ request.GET.query|truncatechars:20 }}"
+                                            <a href="?{% for key, value in request.GET.items %}{% if key != 'query' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="text-white text-decoration-none" data-remove-filter="query">
+                                                <i class="fas fa-times-circle ms-1"></i>
+                                            </a>
+                                        </span>
+                                    {% endif %}
+                                    {% if request.GET.category %}
+                                        {% for cat in categories %}
+                                            {% if cat.id|stringformat:"i" == request.GET.category %}
+                                                <span class="badge bg-success d-flex align-items-center gap-1 px-3 py-2 rounded-pill">
+                                                    <i class="fas fa-tag fa-xs me-1"></i>{{ cat.name }}
+                                                    <a href="?{% for key, value in request.GET.items %}{% if key != 'category' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="text-white text-decoration-none">
+                                                        <i class="fas fa-times-circle ms-1"></i>
+                                                    </a>
+                                                </span>
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endif %}
+                                    {% if request.GET.source %}
+                                        {% for src in sources %}
+                                            {% if src.id|stringformat:"i" == request.GET.source %}
+                                                <span class="badge bg-info d-flex align-items-center gap-1 px-3 py-2 rounded-pill">
+                                                    <i class="fas fa-server fa-xs me-1"></i>{{ src.name|truncatechars:15 }}
+                                                    <a href="?{% for key, value in request.GET.items %}{% if key != 'source' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="text-white text-decoration-none">
+                                                        <i class="fas fa-times-circle ms-1"></i>
+                                                    </a>
+                                                </span>
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endif %}
+                                    {% if request.GET.date %}
+                                        <span class="badge bg-warning text-dark d-flex align-items-center gap-1 px-3 py-2 rounded-pill">
+                                            <i class="fas fa-calendar-alt fa-xs me-1"></i>
+                                            {% if request.GET.date == 'today' %}Сегодня
+                                            {% elif request.GET.date == 'week' %}Неделя
+                                            {% elif request.GET.date == 'month' %}Месяц
+                                            {% elif request.GET.date == 'all' %}Всё время
+                                            {% endif %}
+                                            <a href="?{% for key, value in request.GET.items %}{% if key != 'date' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="text-dark text-decoration-none">
+                                                <i class="fas fa-times-circle ms-1"></i>
+                                            </a>
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </form>
+                <!-- ЗАКРЫВАЕМ ТЕГ FORM -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Основной контент: лента новостей и сайдбар -->
+    <div class="col-lg-8">
+        <!-- Лента новостей -->
+        {% for article in articles %}
+            <div class="card border-0 shadow-sm mb-4 hover-card">
+                <div class="row g-0">
+                    {% if article.image %}
+                        <div class="col-md-3">
+                            <img src="{{ article.image.url }}" class="img-fluid rounded-start h-100 object-fit-cover" alt="{{ article.title }}" loading="lazy">
+                        </div>
+                        <div class="col-md-9">
+                    {% elif article.image_url %}
+                        <div class="col-md-3">
+                            <img src="{{ article.image_url }}" class="img-fluid rounded-start h-100 object-fit-cover" alt="{{ article.title }}" loading="lazy">
+                        </div>
+                        <div class="col-md-9">
+                    {% else %}
+                        <div class="col-12">
+                    {% endif %}
+                        <div class="card-body">
+                            <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                <span class="badge bg-light text-dark">
+                                    <i class="fas fa-dot-circle text-primary me-1" style="font-size: 0.5rem;"></i>
+                                    {{ article.source.name|default:"Собственная статья" }}
+                                </span>
+                                <span class="text-muted small">
+                                    <i class="far fa-clock me-1"></i>{{ article.published_at|timesince }} назад
+                                </span>
+                                {% if article.category %}
+                                    <span class="badge bg-light text-dark">
+                                        <i class="fas fa-tag me-1"></i>{{ article.category.name }}
+                                    </span>
+                                {% endif %}
+                            </div>
+                            
+                            <h5 class="card-title">
+                                <a href="{% url 'news:article_detail' article.pk %}" class="text-decoration-none text-dark">
+                                    {{ article.title }}
+                                </a>
+                            </h5>
+                            
+                            <p class="card-text text-muted">{{ article.excerpt|default:article.content|truncatewords:30 }}</p>
+                            
+                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                <div class="text-muted small">
+                                    <i class="far fa-eye me-1"></i>{{ article.views }} просмотров
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <a href="{% url 'news:save_article' article.pk %}" class="btn btn-outline-danger btn-sm {% if article.pk in saved_ids %}active{% endif %}">
+                                        <i class="{% if article.pk in saved_ids %}fas{% else %}far{% endif %} fa-bookmark me-1"></i>
+                                        {% if article.pk in saved_ids %}Сохранено{% else %}Сохранить{% endif %}
+                                    </a>
+                                    <button class="btn btn-outline-secondary btn-sm share-btn" data-url="{{ article.get_absolute_url }}">
+                                        <i class="far fa-share-square"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="text-center py-5">
+                <i class="fas fa-newspaper fa-4x text-muted mb-3"></i>
+                <h5>Новостей не найдено</h5>
+                <p class="text-muted">Попробуйте изменить параметры фильтрации</p>
+            </div>
+        {% endfor %}
+
+        <!-- Пагинация -->
+        {% if articles.has_other_pages %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center flex-wrap">
+                    {% if articles.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="First">
+                                <span aria-hidden="true">&laquo;&laquo;</span>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ articles.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Previous">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                    {% endif %}
+
+                    {% for num in articles.paginator.page_range %}
+                        {% if articles.number == num %}
+                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                        {% elif num > articles.number|add:'-3' and num < articles.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if articles.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ articles.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Next">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ articles.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Last">
+                                <span aria-hidden="true">&raquo;&raquo;</span>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    </div>
+
+    <!-- Сайдбар -->
+    <div class="col-lg-4">
+        <!-- Блок пользователя (для авторизованных) -->
+        {% if user.is_authenticated %}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; font-size: 1.5rem;">
+                            {{ user.username|first|upper }}
+                        </div>
+                        <div>
+                            <h6 class="mb-0 fw-semibold">{{ user.username }}</h6>
+                            <small class="text-muted">{{ user.email }}</small>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <div class="fw-bold fs-5 text-primary">{{ user.saved_articles.count }}</div>
+                        <small class="text-muted">Сохранено</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Популярные категории -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-0">
+                <h6 class="mb-0"><i class="fas fa-chart-line me-2 text-primary"></i>Популярные категории</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex flex-wrap gap-2">
+                    {% for category in categories|slice:":10" %}
+                        <a href="?category={{ category.id }}" class="badge bg-light text-dark text-decoration-none p-2">
+                            <i class="fas fa-tag me-1"></i>{{ category.name }}
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Популярные теги (если есть) -->
+        {% if popular_tags %}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0">
+                    <h6 class="mb-0"><i class="fas fa-tags me-2 text-primary"></i>Часто ищут</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for tag in popular_tags %}
+                            <a href="?query={{ tag.title|urlencode }}" class="badge bg-light text-dark text-decoration-none p-2">
+                                #{{ tag.title|truncatechars:15 }}
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Источники -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-0">
+                <h6 class="mb-0"><i class="fas fa-server me-2 text-primary"></i>Активные источники</h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    {% for source in sources|slice:":8" %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <a href="?source={{ source.id }}" class="text-decoration-none text-dark">
+                                <i class="fas fa-rss text-primary me-2"></i>{{ source.name }}
+                            </a>
+                            <span class="badge bg-primary rounded-pill">{{ source.articles.count }}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+                {% if sources.count > 8 %}
+                    <a href="{% url 'news:sources' %}" class="btn btn-link text-decoration-none mt-2">
+                        <i class="fas fa-arrow-right me-1"></i>Все источники
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Добавляем стили -->
+<style>
+    .hover-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .hover-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.08) !important;
+    }
+    .object-fit-cover {
+        object-fit: cover;
+        width: 100%;
+        height: 200px;
+    }
+    .avatar {
+        font-weight: 600;
+    }
+    .pagination .page-link {
+        color: #333;
+        border: none;
+        margin: 0 2px;
+        border-radius: 8px;
+    }
+    .pagination .active .page-link {
+        background-color: #0d6efd;
+        color: white;
+    }
+    .btn-outline-secondary.active {
+        background-color: #e9ecef;
+        color: #333;
+        border-color: #ced4da;
+    }
+    .badge.bg-light {
+        background-color: #f8f9fa !important;
+        border: 1px solid #e9ecef;
+    }
+    .badge.bg-light:hover {
+        background-color: #e9ecef !important;
+    }
+    .list-group-item {
+        border: none;
+        border-bottom: 1px solid #f1f3f5;
+    }
+    .list-group-item:last-child {
+        border-bottom: none;
+    }
+    .badge a {
+        opacity: 0.8;
+        transition: opacity 0.2s;
+    }
+    .badge a:hover {
+        opacity: 1;
+    }
+    .badge.bg-warning a {
+        color: #212529 !important;
+    }
+    #reset-filters {
+        transition: all 0.2s;
+    }
+    #reset-filters:hover {
+        background-color: #dc3545;
+        border-color: #dc3545;
+        color: white;
+    }
+    
+    /* Адаптивные стили */
+    @media (max-width: 768px) {
+        .object-fit-cover {
+            height: 180px;
+        }
+        .card-body {
+            padding: 1rem;
+        }
+        .card-title {
+            font-size: 1.1rem;
+        }
+        .badge {
+            font-size: 0.7rem;
+        }
+        .btn-sm {
+            padding: 0.25rem 0.6rem;
+            font-size: 0.75rem;
+        }
+        .pagination .page-link {
+            padding: 0.3rem 0.7rem;
+            font-size: 0.85rem;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .object-fit-cover {
+            height: 150px;
+        }
+        .card-text {
+            font-size: 0.85rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Кнопка сброса всех фильтров
+    const resetBtn = document.getElementById('reset-filters');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', function() {
+            const searchInput = document.getElementById('search-query');
+            const categorySelect = document.getElementById('category-filter');
+            const sourceSelect = document.getElementById('source-filter');
+            
+            if (searchInput) searchInput.value = '';
+            if (categorySelect) categorySelect.value = '';
+            if (sourceSelect) sourceSelect.value = '';
+            
+            window.location.href = window.location.pathname;
+        });
+    }
+    
+    // Удаление отдельного фильтра через крестик
+    document.querySelectorAll('[data-remove-filter]').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const filterToRemove = this.dataset.removeFilter;
+            const currentUrl = new URL(window.location.href);
+            currentUrl.searchParams.delete(filterToRemove);
+            window.location.href = currentUrl.toString();
+        });
+    });
+    
+    // Кнопки поделиться
+    document.querySelectorAll('.share-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const url = window.location.origin + this.dataset.url;
+            if (navigator.share) {
+                navigator.share({
+                    title: document.title,
+                    url: url
+                }).catch(console.error);
+            } else {
+                navigator.clipboard.writeText(url).then(() => {
+                    alert('Ссылка скопирована в буфер обмена');
+                });
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

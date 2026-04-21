@@ -1,0 +1,49 @@
+{% load static %}
+<div class="comment-item mb-3 pb-3 border-bottom" id="comment-{{ comment.id }}" data-comment-id="{{ comment.id }}">
+    <div class="d-flex justify-content-between align-items-start">
+        <div class="d-flex align-items-center gap-2">
+            <div class="avatar bg-secondary bg-opacity-25 text-dark rounded-circle d-flex align-items-center justify-content-center" style="width: 35px; height: 35px; font-size: 14px;">
+                {{ comment.user.username|first|upper }}
+            </div>
+            <div>
+                <strong class="text-primary">{{ comment.user.username }}</strong>
+                <small class="text-muted ms-2">
+                    <i class="far fa-clock me-1"></i>{{ comment.created_at|date:"d.m.Y H:i" }}
+                    {% if comment.is_edited %}
+                        <span class="badge bg-secondary ms-1" title="Отредактировано">✎ ред.</span>
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+        
+        {% if user == comment.user or user.is_staff %}
+            <div class="dropdown">
+                <button class="btn btn-sm btn-link text-muted" type="button" data-bs-toggle="dropdown">
+                    <i class="fas fa-ellipsis-v"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                        <button class="dropdown-item edit-comment-btn" data-id="{{ comment.id }}" data-text="{{ comment.text|escapejs }}">
+                            <i class="fas fa-edit me-2"></i>Редактировать
+                        </button>
+                    </li>
+                    <li>
+                        <button class="dropdown-item text-danger delete-comment-btn" data-id="{{ comment.id }}">
+                            <i class="fas fa-trash-alt me-2"></i>Удалить
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        {% endif %}
+    </div>
+    <div class="comment-text mt-2 ps-4">
+        {{ comment.text|linebreaksbr }}
+    </div>
+    <div class="edit-form-container mt-2" style="display: none;">
+        <textarea class="form-control edit-textarea" rows="3">{{ comment.text }}</textarea>
+        <div class="mt-2">
+            <button class="btn btn-sm btn-primary save-edit-btn" data-id="{{ comment.id }}">Сохранить</button>
+            <button class="btn btn-sm btn-secondary cancel-edit-btn">Отмена</button>
+        </div>
+    </div>
+</div>

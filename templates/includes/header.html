@@ -1,0 +1,322 @@
+{% load static %}
+<header class="header bg-white border-bottom">
+    <div class="container">
+        <nav class="navbar navbar-expand-lg navbar-light bg-white p-0">
+            <div class="container-fluid p-0">
+                <!-- Логотип и навигация (десктопная) -->
+                <div class="d-flex align-items-center">
+                    <a href="{% url 'news:index' %}" class="text-dark text-decoration-none fs-3 fw-bold">
+                        <i class="fa-regular fa-newspaper text-primary me-2"></i>
+                        <span class="fw-light">Сборник новостей</span>
+                    </a>
+                    
+                    <!-- Десктопное меню (скрывается на мобильных) -->
+                    <div class="collapse navbar-collapse" id="navbarMain">
+                        <ul class="navbar-nav ms-4">
+                            <li class="nav-item">
+                                <a href="{% url 'news:index' %}" class="nav-link px-3 {% if request.resolver_match.url_name == 'index' %}active fw-semibold{% endif %}">
+                                    Лента
+                                </a>
+                            </li>
+                            
+                            {% if user.is_authenticated %}
+                                <li class="nav-item">
+                                    <a href="{% url 'news:saved_articles' %}" class="nav-link px-3 {% if request.resolver_match.url_name == 'saved_articles' %}active fw-semibold{% endif %}">
+                                        Сохранённое
+                                    </a>
+                                </li>
+                            {% endif %}
+                            
+                            {% if user.is_authenticated and user.is_staff %}
+                                <li class="nav-item">
+                                    <a href="{% url 'news:sources' %}" class="nav-link px-3 {% if request.resolver_match.url_name == 'sources' %}active fw-semibold{% endif %}">
+                                        Источники
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- Кнопка бургер-меню для мобильных -->
+                <button class="navbar-toggler border-0 d-lg-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain" 
+                        aria-controls="navbarMain" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                
+                <!-- Правая часть: пользовательское меню (десктоп) -->
+                <div class="d-flex align-items-center d-none d-lg-flex">
+                    {% if user.is_authenticated %}
+                        <div class="dropdown">
+                            <button class="btn btn-light rounded-circle p-2" type="button" data-bs-toggle="dropdown">
+                                <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                    {{ user.username|first|upper }}
+                                </div>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="{% url 'accounts:profile' %}">Профиль</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form method="post" action="{% url 'accounts:logout' %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="dropdown-item text-danger">Выйти</button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    {% else %}
+                        <a href="{% url 'accounts:login' %}" class="btn btn-outline-primary me-2">Войти</a>
+                        <a href="{% url 'accounts:register' %}" class="btn btn-primary">Регистрация</a>
+                    {% endif %}
+                </div>
+            </div>
+        </nav>
+    </div>
+</header>
+
+<!-- Мобильное меню с профилем (отдельно от основного) -->
+<div class="mobile-menu-overlay" id="mobileMenuOverlay" style="display: none;">
+    <div class="mobile-menu">
+        <div class="mobile-menu-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Меню</h5>
+                <button class="btn-close mobile-menu-close" id="closeMobileMenu"></button>
+            </div>
+        </div>
+        <div class="mobile-menu-body">
+            <!-- Профиль в мобильном меню -->
+            {% if user.is_authenticated %}
+                <div class="mobile-profile mb-4">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px; font-size: 1.2rem;">
+                            {{ user.username|first|upper }}
+                        </div>
+                        <div>
+                            <h6 class="mb-0 fw-semibold">{{ user.username }}</h6>
+                            <small class="text-muted">{{ user.email }}</small>
+                        </div>
+                    </div>
+                </div>
+                <hr>
+            {% endif %}
+            
+            <!-- Навигация в мобильном меню -->
+            <ul class="mobile-nav-list">
+                <li>
+                    <a href="{% url 'news:index' %}" class="mobile-nav-link {% if request.resolver_match.url_name == 'index' %}active{% endif %}">
+                        <i class="fas fa-newspaper me-3"></i>Лента
+                    </a>
+                </li>
+                
+                {% if user.is_authenticated %}
+                    <li>
+                        <a href="{% url 'news:saved_articles' %}" class="mobile-nav-link {% if request.resolver_match.url_name == 'saved_articles' %}active{% endif %}">
+                            <i class="fas fa-bookmark me-3"></i>Сохранённое
+                        </a>
+                    </li>
+                {% endif %}
+                
+                {% if user.is_authenticated and user.is_staff %}
+                    <li>
+                        <a href="{% url 'news:sources' %}" class="mobile-nav-link {% if request.resolver_match.url_name == 'sources' %}active{% endif %}">
+                            <i class="fas fa-server me-3"></i>Источники
+                        </a>
+                    </li>
+                {% endif %}
+                
+                {% if user.is_authenticated %}
+                    <li>
+                        <a href="{% url 'accounts:profile' %}" class="mobile-nav-link">
+                            <i class="fas fa-user me-3"></i>Профиль
+                        </a>
+                    </li>
+                    <li>
+                        <form method="post" action="{% url 'accounts:logout' %}" class="mobile-logout-form">
+                            {% csrf_token %}
+                            <button type="submit" class="mobile-nav-link text-danger">
+                                <i class="fas fa-sign-out-alt me-3"></i>Выйти
+                            </button>
+                        </form>
+                    </li>
+                {% else %}
+                    <li>
+                        <a href="{% url 'accounts:login' %}" class="mobile-nav-link">
+                            <i class="fas fa-sign-in-alt me-3"></i>Войти
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'accounts:register' %}" class="mobile-nav-link">
+                            <i class="fas fa-user-plus me-3"></i>Регистрация
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</div>
+
+<style>
+    header {
+        padding: 0.4% 0;
+    }
+
+    /* Стили для мобильного меню */
+    .mobile-menu-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 1050;
+        background: rgba(0,0,0,0.3);
+        transition: opacity 0.3s ease;
+    }
+    
+    .mobile-menu {
+        position: fixed;
+        top: 0;
+        left: -100%;
+        width: 85%;
+        max-width: 350px;
+        height: 100%;
+        background: white;
+        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        transition: left 0.3s ease;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .mobile-menu.open {
+        left: 0;
+    }
+    
+    .mobile-menu-header {
+        padding: 20px;
+        border-bottom: 1px solid #e9ecef;
+        background: white;
+    }
+    
+    .mobile-menu-body {
+        flex: 1;
+        padding: 20px;
+        overflow-y: auto;
+    }
+    
+    .mobile-profile {
+        padding: 10px 0;
+    }
+    
+    .mobile-nav-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .mobile-nav-list li {
+        margin-bottom: 8px;
+    }
+    
+    .mobile-nav-link {
+        display: block;
+        padding: 12px 15px;
+        color: #333;
+        text-decoration: none;
+        border-radius: 10px;
+        transition: all 0.2s;
+        background: none;
+        border: none;
+        width: 100%;
+        text-align: left;
+        font-size: 16px;
+    }
+    
+    .mobile-nav-link i {
+        width: 24px;
+        text-align: center;
+    }
+    
+    .mobile-nav-link:hover,
+    .mobile-nav-link.active {
+        background: #f8f9fa;
+        color: #0d6efd;
+    }
+    
+    .mobile-nav-link.text-danger:hover {
+        background: #fee2e2;
+        color: #dc3545 !important;
+    }
+    
+    .mobile-logout-form {
+        margin: 0;
+        padding: 0;
+    }
+    
+    .mobile-menu-close {
+        background: none;
+        border: none;
+        font-size: 20px;
+        cursor: pointer;
+        padding: 5px;
+    }
+    
+    @media (min-width: 992px) {
+        .mobile-menu-overlay {
+            display: none !important;
+        }
+    }
+    
+    @media (max-width: 991.98px) {
+        .navbar-collapse {
+            display: none !important;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const burgerBtn = document.querySelector('.navbar-toggler');
+        const mobileMenu = document.getElementById('mobileMenuOverlay');
+        const menuContainer = document.querySelector('.mobile-menu');
+        const closeBtn = document.getElementById('closeMobileMenu');
+        
+        // Открытие меню
+        if (burgerBtn && mobileMenu) {
+            burgerBtn.addEventListener('click', function() {
+                mobileMenu.style.display = 'block';
+                setTimeout(() => {
+                    menuContainer.classList.add('open');
+                }, 10);
+                document.body.style.overflow = 'hidden';
+            });
+        }
+        
+        // Закрытие меню
+        const closeMenu = function() {
+            menuContainer.classList.remove('open');
+            setTimeout(() => {
+                mobileMenu.style.display = 'none';
+                document.body.style.overflow = '';
+            }, 300);
+        };
+        
+        if (closeBtn) {
+            closeBtn.addEventListener('click', closeMenu);
+        }
+        
+        // Закрытие при клике на оверлей
+        if (mobileMenu) {
+            mobileMenu.addEventListener('click', function(e) {
+                if (e.target === mobileMenu) {
+                    closeMenu();
+                }
+            });
+        }
+        
+        // Закрытие при клике на ссылку
+        document.querySelectorAll('.mobile-nav-link').forEach(link => {
+            link.addEventListener('click', function() {
+                closeMenu();
+            });
+        });
+    });
+</script>

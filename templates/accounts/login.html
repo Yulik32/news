@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+
+{% block title %}Вход{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-5">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white border-0 text-center pt-4">
+                        <h4 class="mb-0">Добро пожаловать!</h4>
+                        <p class="text-muted small">Войдите в свой аккаунт</p>
+                    </div>
+                    <div class="card-body">
+                        <form method="post">
+                            {% csrf_token %}
+                            {{ form|crispy }}
+                            <button type="submit" class="btn btn-primary w-100 mt-3">
+                                <i class="fas fa-sign-in-alt me-2"></i>Войти
+                            </button>
+                        </form>
+                        <div class="text-center mt-4">
+                            <p class="mb-0 text-muted">
+                                Нет аккаунта? 
+                                <a href="{% url 'accounts:register' %}" class="text-decoration-none">
+                                    Зарегистрироваться
+                                </a>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

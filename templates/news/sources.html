@@ -1,0 +1,38 @@
+<!-- Филатова Юля, ИСП-422р -->
+ 
+{% extends 'base.html' %}
+
+{% block title %}Источники новостей{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4">Источники новостей</h2>
+        
+        <div class="row">
+            {% for source in sources %}
+                <div class="col-md-4 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ source.name }}</h5>
+                            <p class="card-text">
+                                <small class="text-muted">Тип: {{ source.get_source_type_display }}</small><br>
+                                {% if source.category %}
+                                    <small class="text-muted">Категория: {{ source.category.name }}</small>
+                                {% endif %}
+                            </p>
+                            <a href="{% url 'news:source_detail' source.pk %}" class="btn btn-sm btn-outline-primary">
+                                Смотреть статьи
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="col-12">
+                    <p class="text-muted">Нет доступных источников</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
